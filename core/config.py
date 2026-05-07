@@ -39,6 +39,8 @@ class Settings(BaseSettings):
     chroma_collection_name: str = Field(
         default=os.getenv("CHROMA_COLLECTION_NAME", "risk_agent_rag"))
 
+    tavily_api_key: str = Field(default=os.getenv("TAVILY_API_KEY", ""))
+
     # 文本分块配置
     chunk_size: int = 500
     chunk_overlap: int = 50
