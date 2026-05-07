@@ -4,12 +4,16 @@
 @author: luzhichao
 @date: 2026/5/7
 """
+
 from langchain.agents import create_agent
 from langchain.agents.middleware import SummarizationMiddleware
 from langchain.chat_models import init_chat_model
 from langchain_community.chat_models.tongyi import ChatTongyi
 from langchain_community.embeddings import DashScopeEmbeddings
+from langchain_community.vectorstores import Chroma
+from langchain_core.documents import Document
 from langchain_core.messages import AIMessageChunk, HumanMessage
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langgraph.checkpoint.redis import RedisSaver
 from redis import Redis
 
@@ -34,6 +38,13 @@ text_llm = ChatTongyi(
 # 嵌入模型
 embeddings_model = DashScopeEmbeddings(
     model="text-embedding-v4",
+)
+
+# 创建向量数据库
+chromadb = Chroma(
+    embedding_function=embeddings_model,
+    persist_directory="./asset/chroma",
+    collection_name="risk_agent_rag"
 )
 
 redis_client = Redis(
@@ -108,3 +119,33 @@ def clean_history(session_id: str):
     @date: 2026-05-07
     """
     redis_checkpointer.delete_thread(session_id)
+
+
+def save_knowledge(docs: list[Document]):
+    """
+    知识库保存接口
+    @author: Luzhichao
+    @date: 2026-05-07
+    """
+    # 创建文本分块器
+    splitter = RecursiveCharacterTextSplitter(chunk_size=100, chunk_overlap=20,
+                                              separator=["。", ";"])
+    # 分块
+    documents = splitter.split_documents(documents=docs)
+    # 向量数据存储
+    chromadb.add_documents(documents=documents)
+
+
+def query_knowledge(query: str, search_type: str = "mmr", k: int = 3) -> list[str]:
+    """
+    知识库查询接口
+    @author: Luzhichao
+    @date: 2026-05-07
+    """
+    docs = chromadb.search(query=query, search_type=search_type, k=k)
+    result = []
+    for doc in docs:
+        if doc.page_content:
+            result.append(doc.page_content)
+
+    return result
