@@ -37,26 +37,25 @@ text_llm = ChatTongyi(
 
 # 嵌入模型
 embeddings_model = DashScopeEmbeddings(
-    model="text-embedding-v4",
+    model=settings.embedding_model_name,
 )
 
 # 创建向量数据库
 chromadb = Chroma(
     embedding_function=embeddings_model,
-    persist_directory="./asset/chroma",
-    collection_name="risk_agent_rag"
+    persist_directory=settings.chroma_persist_directory,
+    collection_name=settings.chroma_collection_name
 )
 
 redis_client = Redis(
-    host="127.0.0.1",
-    port=6379,
-    password="",
+    host=settings.redis_host,
+    port=settings.redis_port,
+    password=settings.redis_password,
     decode_responses=False
 )
 
 # Pass the configured client to RedisSaver
 redis_checkpointer = RedisSaver(redis_client=redis_client)
-
 middleware = SummarizationMiddleware(model=text_llm, trigger=("tokens", 100), keep=("messages", 5))
 
 with open(settings.system_prompt_file_path, "rb") as f:

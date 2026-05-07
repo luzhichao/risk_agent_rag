@@ -4,16 +4,23 @@
 @author: luzhichao
 @date: 2026/5/7
 """
+
 from langchain_core.tools import tool
+
+from utils import llm_utils
 
 
 @tool
-def search_knowledge(keyword: str) -> list[str]:
+def search_knowledge(keywords: list[str]) -> list[str]:
     """
     知识库搜索
-    :param keyword: 关键字
+    :param keywords: 关键字列表
     :return: 返回知识库相关数据
     @author: Luzhichao
     @date: 2026-05-07
     """
-    pass
+    result = []
+    for keyword in keywords:
+        knowledge = llm_utils.query_knowledge(keyword)
+        result.append(knowledge)
+    return result
