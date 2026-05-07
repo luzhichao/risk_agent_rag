@@ -19,7 +19,7 @@ from redis import Redis
 
 from core.config import settings
 from model.chat_model import ChatResponse
-from tools.knowledge_tool import search_knowledge
+from tools.knowledge_tool import search_knowledge, web_search
 
 # 多模态模型
 multi_llm = init_chat_model(
@@ -58,12 +58,12 @@ redis_client = Redis(
 redis_checkpointer = RedisSaver(redis_client=redis_client)
 middleware = SummarizationMiddleware(model=text_llm, trigger=("tokens", 100), keep=("messages", 5))
 
-with open(settings.system_prompt_file_path, "rb") as f:
+with open(settings.system_prompt_file_path, "rb", encoding="utf-8") as f:
     system_prompt = f.read()
 
 agent = create_agent(model=multi_llm,
                      system_prompt=system_prompt,
-                     tools=[search_knowledge],
+                     tools=[search_knowledge, web_search],
                      middleware=[middleware],
                      checkpointer=redis_checkpointer,
                      response_format=ChatResponse,
