@@ -4,15 +4,18 @@
 @author: luzhichao
 @date: 2026/5/7
 """
+import json
+import logging
+from typing import Optional, AsyncGenerator
 
 from langchain.agents import create_agent
 from langchain.agents.middleware import SummarizationMiddleware
 from langchain.chat_models import init_chat_model
-from langchain_community.chat_models.tongyi import ChatTongyi
+from langchain_chroma import Chroma
 from langchain_community.embeddings import DashScopeEmbeddings
-from langchain_community.vectorstores import Chroma
 from langchain_core.documents import Document
 from langchain_core.messages import AIMessageChunk, HumanMessage
+from langchain_core.runnables import RunnableConfig
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langgraph.checkpoint.redis import RedisSaver
 from redis import Redis
@@ -20,6 +23,16 @@ from redis import Redis
 from core.config import settings
 from model.chat_model import ChatResponse
 from tools.knowledge_tool import search_knowledge, web_search
+
+logger = logging.getLogger("llm_utils")
+
+think_nodes = [
+    "SummarizationMiddleware.before_model",
+    "agent",
+    "tools",
+    "pre",
+    "post"
+]
 
 # 多模态模型
 multi_llm = init_chat_model(
@@ -30,9 +43,11 @@ multi_llm = init_chat_model(
 )
 
 # 纯文本模型，形成摘要记忆
-text_llm = ChatTongyi(
+text_llm = init_chat_model(
     model=settings.text_model_name,
-    api_key=settings.dashscope_api_key,
+    model_provider="openai",
+    base_url=settings.base_url,
+    api_key=settings.dashscope_api_key
 )
 
 # 嵌入模型
@@ -58,7 +73,7 @@ redis_client = Redis(
 redis_checkpointer = RedisSaver(redis_client=redis_client)
 middleware = SummarizationMiddleware(model=text_llm, trigger=("tokens", 100), keep=("messages", 5))
 
-with open(settings.system_prompt_file_path, "rb", encoding="utf-8") as f:
+with open(settings.system_prompt_file_path, "r", encoding="utf-8") as f:
     system_prompt = f.read()
 
 agent = create_agent(model=multi_llm,
@@ -73,31 +88,40 @@ agent = create_agent(model=multi_llm,
 async def chat(
         text: str,
         session_id: str,
-        images: list[str] = None,
-):
+        images: Optional[list[str]] = None,
+) -> AsyncGenerator[str, None]:
     """
     会话接口
     @author: Luzhichao
     @date: 2026-05-07
     """
     # 构建消息
-    messages = [{"type": "text", "text": f"${text}"}]
+    messages = [{"type": "text", "text": text}]
     if images and len(images) > 0:
         for image in images:
-            messages.append({"type": "image", "url": f"${image}"})
+            messages.append({"type": "image", "url": image})
     # 配置会话ID
-    config = {"configurable": {"thread_id": f"${session_id}"}}
+    config: RunnableConfig = {"configurable": {"thread_id": session_id}}
     try:
         stream = agent.stream(input={"messages": [HumanMessage(content=messages)]}, config=config,
                               stream_mode="messages")
         for chunk, metadata in stream:
             # print("-" * 50, type(chunk))
-            # print(chunk)
+            # print(metadata)
+            source = metadata.get("langgraph_node", "")
             if isinstance(chunk, AIMessageChunk) and chunk.content:
-                # print(chunk.content, end="", flush=True)
-                yield chunk.content
+                if source == "model":
+                    data = {"type": "output", "content": chunk.content}
+                else:
+                    data = {"type": "think", "content": chunk.content}
+                # print("=" * 50)
+                # print(data, end="", flush=True)
+                yield json.dumps(data, ensure_ascii=False)
     except Exception as e:
-        raise Exception(f"会话接口异常：{str(e)}")
+        logger.error(f"会话接口异常：{str(e)}")
+        error_content = {"type": "output", "content": f"会话接口异常：{str(e)}"}
+        yield json.dumps(error_content, ensure_ascii=False)
+        # raise Exception(f"会话接口异常：{str(e)}")
 
 
 def get_history(session_id: str):
@@ -107,7 +131,7 @@ def get_history(session_id: str):
     @date: 2026-05-07
     """
     # 配置会话ID
-    config = {"configurable": {"thread_id": f"${session_id}"}}
+    config: RunnableConfig = {"configurable": {"thread_id": session_id}}
     return redis_checkpointer.get(config=config)["channel_values"]["messages"]
 
 
@@ -117,7 +141,7 @@ def clean_history(session_id: str):
     @author: Luzhichao
     @date: 2026-05-07
     """
-    redis_checkpointer.delete_thread(session_id)
+    redis_checkpointer.delete_thread(thread_id=session_id)
 
 
 def save_knowledge(docs: list[Document]):
