@@ -15,11 +15,10 @@ from fastapi import FastAPI, status
 from httpcore import Request
 from langgraph_sdk.auth.exceptions import HTTPException
 
-from api.chat import router as chat_router
-from api.knowledge_base import router as knowledge_router
-from api.risk_identify import router as risk_router
-from api.session import router as session_router
+from api.chat_api import router as chat_router
+from api.system_api import router as sys_router
 from core.config import settings
+from core.exceptions import register_global_exception
 from entity.base_entity import BaseEntity
 from utils.db_utils import engine
 
@@ -67,10 +66,11 @@ def create_app() -> FastAPI:
     )
 
     # 注册路由
-    app.include_router(risk_router)
-    app.include_router(knowledge_router)
-    app.include_router(session_router)
     app.include_router(chat_router)
+    app.include_router(sys_router)
+
+    # 注册全局异常
+    register_global_exception(app)
 
     # 健康检查接口
     @app.get("/health", tags=["健康检查"])

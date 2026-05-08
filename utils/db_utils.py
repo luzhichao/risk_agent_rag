@@ -4,8 +4,8 @@
 @author: luzhichao
 @date: 2026/5/7
 """
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, AsyncEngine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, AsyncEngine, \
+    async_sessionmaker
 
 from core.config import settings
 
@@ -14,7 +14,7 @@ engine: AsyncEngine = create_async_engine(url=settings.mysql_database_url, echo=
                                           # pool_recycle=3600,
                                           max_overflow=20)
 
-AsyncSessionLocal: AsyncSession = sessionmaker(
+AsyncSessionLocal: AsyncSession = async_sessionmaker(
     bind=engine,
     class_=AsyncSession,
     autoflush=False,
@@ -24,7 +24,7 @@ AsyncSessionLocal: AsyncSession = sessionmaker(
 
 
 async def get_db():
-    async with AsyncSessionLocal as session:
+    async with AsyncSessionLocal() as session:
         try:
             yield session
         finally:

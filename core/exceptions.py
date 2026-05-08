@@ -4,57 +4,35 @@
 @author: luzhichao
 @date: 2026/5/7
 """
-from fastapi import HTTPException, status
+from fastapi import status, FastAPI
+from httpcore import Request
+
+from core.response import error_response
 
 
-# ======================
-# 自定义异常
-# ======================
-class FileProcessError(HTTPException):
-    """文件处理异常"""
+class CustomException(Exception):
+    """
+    自定义异常
+    :param
+    :return
+    @author: Luzhichao
+    @date: 2026-05-08
+    """
 
-    def __init__(self, detail: str = "文件处理失败"):
-        super().__init__(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=detail
-        )
-
-
-class TimeProcessError(HTTPException):
-    """时间处理异常"""
-
-    def __init__(self, detail: str = "时间处理失败"):
-        super().__init__(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=detail
-        )
+    def __init__(self, status_code: int = status.HTTP_500_INTERNAL_SERVER_ERROR,
+                 detail: str = "操作异常"):
+        self.status_code = status_code
+        self.detail = detail
 
 
-class ModelCallError(HTTPException):
-    """大模型调用异常"""
+# 全局异常处理器
+def register_global_exception(app: FastAPI):
+    # 捕获我们主动抛的 CustomException
+    @app.exception_handler(CustomException)
+    async def api_exception_handler(request: Request, exc: CustomException):
+        return error_response(code=exc.status_code, msg=exc.detail)
 
-    def __init__(self, detail: str = "大模型调用失败"):
-        super().__init__(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=detail
-        )
-
-
-class KnowledgeBaseError(HTTPException):
-    """知识库操作异常"""
-
-    def __init__(self, detail: str = "知识库操作失败"):
-        super().__init__(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=detail
-        )
-
-
-class SessionError(HTTPException):
-    """会话操作异常"""
-
-    def __init__(self, detail: str = "会话操作失败"):
-        super().__init__(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=detail
-        )
+    # 捕获所有未知异常（服务器500错误）
+    @app.exception_handler(Exception)
+    async def global_exception_handler(request: Request, exc: Exception):
+        return error_response(msg=f"服务器异常：{str(exc)}")

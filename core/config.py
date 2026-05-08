@@ -5,6 +5,7 @@
 @date: 2026/5/7
 """
 import os
+from pathlib import Path
 
 from dotenv import load_dotenv
 from pydantic import Field
@@ -22,7 +23,8 @@ class Settings(BaseSettings):
 
     # 系统提示词路径
     system_prompt_file_path: str = Field(
-        default=os.getenv("SYSTEM_PROMPT_FILE_PATH", "../prompt/system_prompt.md"))
+        default=os.getenv("SYSTEM_PROMPT_FILE_PATH",
+                          f"{Path(__file__).parent.parent}/prompt/system_prompt.md"))
 
     # 通义大模型配置
     base_url: str = Field(
@@ -38,7 +40,7 @@ class Settings(BaseSettings):
         default=os.getenv("CHROMA_PERSIST_DIRECTORY", "./db/chroma_db"))
     chroma_collection_name: str = Field(
         default=os.getenv("CHROMA_COLLECTION_NAME", "risk_agent_rag"))
-
+    # tavily配置
     tavily_api_key: str = Field(default=os.getenv("TAVILY_API_KEY", ""))
 
     # 文本分块配置

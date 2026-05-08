@@ -4,46 +4,57 @@
 @author: luzhichao
 @date: 2026/5/7
 """
-from datetime import datetime, timedelta
-from typing import Optional
+from datetime import timedelta
 
-from fastapi import Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordBearer
+from fastapi import status
 from jose import JWTError, jwt
 
-from core.config import settings
+from core.exceptions import CustomException
+from schema.user_schema import Token
+from utils import time_utils
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl=f"/api/{settings.api_version}/token")
+# token配置
+SECRET_KEY = "i&a~=QSk2Hs_nGM!.9e3RVOWf),:6Yv5#hP}x{ow<rTl@q>puyUd]^EDA/+*|8"
+ALGORITHM = "HS256"
+# 7天(60 * 24 * 7)
+ACCESS_TOKEN_EXPIRE_MINUTES = 1
 
 
-def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
-    """生成访问令牌"""
-    to_encode = data.copy()
-    if expires_delta:
-        expire = datetime.utcnow() + expires_delta
-    else:
-        expire = datetime.utcnow() + timedelta(minutes=settings.access_token_expire_minutes)
-    to_encode.update({"exp": expire})
-    encoded_jwt = jwt.encode(
-        to_encode, settings.secret_key, algorithm=settings.algorithm
-    )
+def create_access_token(user_id: int, user_name: str) -> str:
+    """
+    创建token
+    :param
+    :return
+    @author: Luzhichao
+    @date: 2026-05-08
+    """
+    expire = time_utils.add_time(timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
+    to_encode = {
+        "user_id": user_id,
+        "user_name": user_name,
+        "exp": expire
+    }
+    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
 
-def verify_token(token: str = Depends(oauth2_scheme)):
-    """验证令牌"""
-    credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="无效的认证凭证",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
+def verify_token(token: str):
+    """
+    校验登录token
+    :param
+    :return
+    @author: Luzhichao
+    @date: 2026-05-08
+    """
     try:
-        payload = jwt.decode(
-            token, settings.secret_key, algorithms=[settings.algorithm]
-        )
-        user_id: str = payload.get("sub", "")
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM],
+                             options={"verify_exp": True})
+        user_id: int = payload.get("user_id")
+        user_name: str = payload.get("user_name")
         if user_id is None:
-            raise credentials_exception
-        return user_id
+            raise CustomException(status_code=status.HTTP_401_UNAUTHORIZED,
+                                  detail="登录失效，请重新登录")
+        return Token(user_id=user_id, user_name=user_name)
     except JWTError:
-        raise credentials_exception
+        raise CustomException(status_code=status.HTTP_401_UNAUTHORIZED,
+                              detail="登录失效，请重新登录")
