@@ -4,9 +4,12 @@
 @author: luzhichao
 @date: 2026/5/8
 """
-import uuid
 from typing import Optional, AsyncGenerator
 
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from core.exceptions import CustomException
+from service.session_service import SessionService
 from utils.llm_utils import chat
 
 
@@ -15,6 +18,7 @@ class ChatService:
     @staticmethod
     async def ask_chat(session_id: str, question: str,
                        user_id: str,
+                       db: AsyncSession,
                        image_urls: Optional[list[str]] = None
                        ) -> AsyncGenerator[str, None]:
         """
@@ -24,12 +28,17 @@ class ChatService:
         @author: Luzhichao
         @date: 2026-05-08
         """
-        # TODO 可完善根据用户ID和session id判断是否存在会话
+        # 根据用户ID和会话ID判断是否存在会话
         if session_id is None:
-            session_id = str(uuid.uuid4())
-            # TODO 创建用户的新会话
+            # 创建用户的新会话
+            session_id = await SessionService.create_new_session(db=db, user_id=user_id,
+                                                                 session_name=question)
         else:
-            # TODO 获取用户会话信息
-            pass
+            # 获取用户会话信息
+            session = await SessionService.get_user_sessions(db=db, user_id=user_id,
+                                                             session_id=session_id)
+            if session is None:
+                # 会话不存在
+                raise CustomException(detail="会话不存在")
 
         return chat(text=question, session_id=session_id, images=image_urls)

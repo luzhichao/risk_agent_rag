@@ -15,7 +15,7 @@ from core.security import create_access_token
 from entity.user_entity import UserEntity
 from schema.user_schema import UserRegister, UserLogIn
 
-logger = logging.getLogger("system_api")
+logger = logging.getLogger("system_service")
 pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")
 
 
@@ -59,7 +59,7 @@ class UserService:
         except Exception as e:
             logger.error(e)
             await db.rollback()
-            raise Exception("注册失败")
+            raise CustomException(detail="注册失败")
 
     @staticmethod
     async def login(db: AsyncSession, user: UserLogIn):
@@ -81,4 +81,4 @@ class UserService:
             return token
         except Exception as e:
             logger.error(e)
-            raise Exception("登录失败")
+            raise CustomException(detail="登录失败")

@@ -14,7 +14,8 @@ from langchain.chat_models import init_chat_model
 from langchain_chroma import Chroma
 from langchain_community.embeddings import DashScopeEmbeddings
 from langchain_core.documents import Document
-from langchain_core.messages import AIMessageChunk, HumanMessage
+from langchain_core.messages import AIMessageChunk, HumanMessage, BaseMessage, ToolMessage, \
+    AIMessage
 from langchain_core.runnables import RunnableConfig
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langgraph.checkpoint.redis import RedisSaver
@@ -22,6 +23,7 @@ from redis import Redis
 
 from core.config import settings
 from model.chat_model import ChatResponse
+from model.session_model import SessionHistoryResponse
 from tools.knowledge_tool import search_knowledge, web_search
 
 logger = logging.getLogger("llm_utils")
@@ -121,7 +123,6 @@ async def chat(
         logger.error(f"会话接口异常：{str(e)}")
         error_content = {"type": "output", "content": f"会话接口异常：{str(e)}"}
         yield json.dumps(error_content, ensure_ascii=False)
-        # raise Exception(f"会话接口异常：{str(e)}")
 
 
 def get_history(session_id: str):
@@ -132,7 +133,23 @@ def get_history(session_id: str):
     """
     # 配置会话ID
     config: RunnableConfig = {"configurable": {"thread_id": session_id}}
-    return redis_checkpointer.get(config=config)["channel_values"]["messages"]
+    history = redis_checkpointer.get(config=config)
+    session_history: list[SessionHistoryResponse] = []
+    if history is not None:
+        channel_values = history.get("channel_values", None)
+        if channel_values is not None:
+            messages: list[BaseMessage] = channel_values.get("messages", [])
+            if len(messages) > 0:
+                for message in messages:
+                    if isinstance(message, HumanMessage) | isinstance(message, AIMessage):
+                        if is_valid_content(message.content):
+                            session_history.append(
+                                SessionHistoryResponse(type=message.type, content=message.content))
+                    elif isinstance(message, ToolMessage):
+                        message.pretty_print()
+                        continue
+
+    return session_history
 
 
 def clean_history(session_id: str):
@@ -172,3 +189,26 @@ def query_knowledge(query: str, search_type: str = "mmr", k: int = 3) -> list[st
             result.append(doc.page_content)
 
     return result
+
+
+def is_valid_content(content: str | list[str | dict] | None) -> bool:
+    """
+    判断 content 是否有效：
+    - 不为 None
+    - 不为空字符串 ""
+    - 不为空列表 []
+    :param
+    :return
+    @author: Luzhichao
+    @date: 2026-05-09
+    """
+    if content is None:
+        return False
+
+    if isinstance(content, str):
+        return len(content.strip()) > 0
+
+    if isinstance(content, list):
+        return len(content) > 0
+
+    return False

@@ -8,13 +8,15 @@ import logging
 
 from fastapi import APIRouter, Body, Depends
 from fastapi.responses import StreamingResponse
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.config import settings
-from core.response import error_response
+from core.response import Result
 from core.security import verify_token
 from schema.chat_schema import Ask
 from schema.user_schema import Token
 from service.chat_service import ChatService
+from utils.db_utils import get_db
 
 logger = logging.getLogger("chat_api")
 
@@ -24,7 +26,8 @@ router = APIRouter(prefix=f"/api/{settings.api_version}/chat", tags=["智能问�
 @router.post(path="/ask", summary="智能问答", description="安全问题智能问答")
 async def ask_question(
         ask: Ask = Body(..., description="用户提问信息"),
-        user: Token = Depends(verify_token)
+        user: Token = Depends(verify_token),
+        db: AsyncSession = Depends(get_db),
 ):
     """
     用户提问接口（核心智能问答入口）
@@ -43,7 +46,8 @@ async def ask_question(
             session_id=ask.session_id,
             user_id=user.user_id,
             question=ask.question,
-            image_urls=ask.image_urls
+            image_urls=ask.image_urls,
+            db=db
         )
         return StreamingResponse(
             content=answer,
@@ -51,4 +55,4 @@ async def ask_question(
         )
     except Exception as e:
         logger.error(f"用户提问异常：{str(e)}")
-        return error_response(msg="服务器繁忙，请稍后再试")
+        return Result.error(msg="服务器繁忙，请稍后再试")

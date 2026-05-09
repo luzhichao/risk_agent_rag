@@ -16,8 +16,8 @@ from utils import time_utils
 # token配置
 SECRET_KEY = "i&a~=QSk2Hs_nGM!.9e3RVOWf),:6Yv5#hP}x{ow<rTl@q>puyUd]^EDA/+*|8"
 ALGORITHM = "HS256"
-# 7天(60 * 24 * 7)
-ACCESS_TOKEN_EXPIRE_MINUTES = 1
+# 7天
+ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7
 
 
 def create_access_token(user_id: int, user_name: str) -> str:

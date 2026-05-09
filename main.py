@@ -11,14 +11,16 @@ from logging.handlers import RotatingFileHandler
 
 import uvicorn
 from dotenv import load_dotenv
-from fastapi import FastAPI, status
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from httpcore import Request
-from langgraph_sdk.auth.exceptions import HTTPException
 
 from api.chat_api import router as chat_router
+from api.session_api import router as session_router
 from api.system_api import router as sys_router
 from core.config import settings
 from core.exceptions import register_global_exception
+from core.response import Result
 from entity.base_entity import BaseEntity
 from utils.db_utils import engine
 
@@ -68,14 +70,23 @@ def create_app() -> FastAPI:
     # 注册路由
     app.include_router(chat_router)
     app.include_router(sys_router)
+    app.include_router(session_router)
 
     # 注册全局异常
     register_global_exception(app)
 
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],  # 允许所有来源
+        allow_credentials=True,  # 允许携带Cookie、Token
+        allow_methods=["*"],  # 允许所有请求方法 GET/POST/PUT/DELETE
+        allow_headers=["*"],  # 允许所有请求头
+    )
+
     # 健康检查接口
     @app.get("/health", tags=["健康检查"])
     async def health_check():
-        return {"status": "healthy", "version": settings.api_version}
+        return Result.success(data=settings.api_version)
 
     @app.middleware("http")
     async def log_request(request: Request, call_next):

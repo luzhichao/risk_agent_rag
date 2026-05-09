@@ -4,6 +4,7 @@
 @author: luzhichao
 @date: 2026/5/7
 """
+from core.exceptions import CustomException
 from utils.time_utils import now_timestamp
 
 
@@ -47,7 +48,7 @@ class Snowflake:
         timestamp = now_timestamp()
 
         if timestamp < self.last_timestamp:
-            raise Exception("时间回退，无法生成ID")
+            raise CustomException(detail="时间回退，无法生成ID")
 
         if timestamp == self.last_timestamp:
             self.sequence = (self.sequence + 1) & 4095

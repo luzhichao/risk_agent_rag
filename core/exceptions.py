@@ -6,8 +6,9 @@
 """
 from fastapi import status, FastAPI
 from httpcore import Request
+from starlette.responses import JSONResponse
 
-from core.response import error_response
+from core.response import Result
 
 
 class CustomException(Exception):
@@ -27,12 +28,12 @@ class CustomException(Exception):
 
 # 全局异常处理器
 def register_global_exception(app: FastAPI):
-    # 捕获我们主动抛的 CustomException
+    # 捕获业务主动抛的 CustomException
     @app.exception_handler(CustomException)
     async def api_exception_handler(request: Request, exc: CustomException):
-        return error_response(code=exc.status_code, msg=exc.detail)
+        return JSONResponse(content=Result.error(code=exc.status_code, msg=exc.detail).model_dump())
 
     # 捕获所有未知异常（服务器500错误）
     @app.exception_handler(Exception)
     async def global_exception_handler(request: Request, exc: Exception):
-        return error_response(msg=f"服务器异常：{str(exc)}")
+        return JSONResponse(content=Result.error(msg=f"服务器异常：{str(exc)}").model_dump())
