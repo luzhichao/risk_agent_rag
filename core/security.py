@@ -6,7 +6,7 @@
 """
 from datetime import timedelta
 
-from fastapi import status
+from fastapi import status, Header
 from jose import JWTError, jwt
 
 from core.exceptions import CustomException
@@ -38,7 +38,7 @@ def create_access_token(user_id: int, user_name: str) -> str:
     return encoded_jwt
 
 
-def verify_token(token: str):
+def verify_token(token: str = Header(default=None, alias="Authorization")):
     """
     校验登录token
     :param
@@ -46,6 +46,9 @@ def verify_token(token: str):
     @author: Luzhichao
     @date: 2026-05-08
     """
+    if token is None:
+        raise CustomException(status_code=status.HTTP_401_UNAUTHORIZED,
+                              detail="登录失效，请重新登录")
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM],
                              options={"verify_exp": True})

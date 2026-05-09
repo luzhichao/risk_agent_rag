@@ -77,10 +77,6 @@ def create_app() -> FastAPI:
     async def health_check():
         return {"status": "healthy", "version": settings.api_version}
 
-    @app.get("/", tags=[""])
-    async def root():
-        return HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not Found")
-
     @app.middleware("http")
     async def log_request(request: Request, call_next):
         """请求日志中间件"""

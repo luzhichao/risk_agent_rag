@@ -6,11 +6,14 @@
 """
 import logging
 
-from fastapi import APIRouter, Body
+from fastapi import APIRouter, Body, Depends
 from fastapi.responses import StreamingResponse
 
 from core.config import settings
 from core.response import error_response
+from core.security import verify_token
+from schema.chat_schema import Ask
+from schema.user_schema import Token
 from service.chat_service import ChatService
 
 logger = logging.getLogger("chat_api")
@@ -18,12 +21,10 @@ logger = logging.getLogger("chat_api")
 router = APIRouter(prefix=f"/api/{settings.api_version}/chat", tags=["智能问答接口"])
 
 
-@router.post("/ask")
+@router.post(path="/ask", summary="智能问答", description="安全问题智能问答")
 async def ask_question(
-        question: str = Body(..., description="用户提问内容"),
-        image_urls: list[str] = Body([], description="图片URL列表"),
-        session_id: str = Body(..., description="会话ID，必须先创建"),
-        # user_id: str = Depends(verify_token)
+        ask: Ask = Body(..., description="用户提问信息"),
+        user: Token = Depends(verify_token)
 ):
     """
     用户提问接口（核心智能问答入口）
@@ -39,9 +40,10 @@ async def ask_question(
     """
     try:
         answer = await ChatService.ask_chat(
-            session_id=session_id,
-            question=question,
-            image_urls=image_urls
+            session_id=ask.session_id,
+            user_id=user.user_id,
+            question=ask.question,
+            image_urls=ask.image_urls
         )
         return StreamingResponse(
             content=answer,

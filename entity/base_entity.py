@@ -10,6 +10,7 @@ from sqlalchemy import DateTime, String
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 from core.snowflake import next_id
+from utils.time_utils import now_time
 
 
 class BaseEntity(DeclarativeBase):
@@ -18,14 +19,14 @@ class BaseEntity(DeclarativeBase):
     @author: Luzhichao
     @date: 2026-05-08
     """
-    id: Mapped[str] = mapped_column("id", String(64), primary_key=True, default=next_id,
-                                    comment="实体ID")
+    id: Mapped[str] = mapped_column("id", String(64), primary_key=True,
+                                    default=next_id, comment="实体ID")
     created_time: Mapped[datetime] = mapped_column("created_time", DateTime,
-                                                   insert_default=datetime.now,
-                                                   default=datetime.now,
+                                                   insert_default=now_time,
+                                                   default=now_time,
                                                    comment="创建时间")
     updated_time: Mapped[datetime] = mapped_column("updated_time", DateTime,
-                                                   insert_default=datetime.now,
-                                                   onupdate=datetime.now,
-                                                   default=datetime.now,
+                                                   insert_default=now_time,
+                                                   onupdate=now_time,
+                                                   default=now_time,
                                                    comment="更新时间")

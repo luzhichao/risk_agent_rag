@@ -6,7 +6,7 @@
 """
 import re
 
-from pydantic import BaseModel, EmailStr, field_validator
+from pydantic import BaseModel, EmailStr, field_validator, Field
 
 
 class UserRegister(BaseModel):
@@ -15,23 +15,15 @@ class UserRegister(BaseModel):
     @author: Luzhichao
     @date: 2026-05-08
     """
-    user_name: str
-    phone: str
-    email: EmailStr
-    user_password: str
+    user_name: str = Field(..., min_length=2, max_length=20, description="用户名(只能包含英文字母和数字)")
+    phone: str = Field(..., min_length=11, max_length=11, description="手机号")
+    email: EmailStr = Field(..., description="邮箱")
+    user_password: str = Field(..., min_length=6, max_length=20, description="密码(只能包含英文字母、数字和常用特殊字符)")
 
     @field_validator("user_name")
     def validate_username(cls, v):
-        v = v.strip()
-        # 不能为空
-        if not v:
-            raise ValueError("用户名不能为空")
-        # 不能超过10位
-        if len(v) > 10:
-            raise ValueError("用户名长度不能超过10位")
-        # 只能是英文字母
-        if not re.match(r'^[a-zA-Z]+$', v):
-            raise ValueError("用户名只能包含英文字母")
+        if not re.match(r'^[a-zA-Z0-9]+$', v):
+            raise ValueError("用户名只能包含英文字母和数字")
         return v
 
     @field_validator("phone")
@@ -42,8 +34,8 @@ class UserRegister(BaseModel):
 
     @field_validator("user_password")
     def validate_password(cls, v):
-        if len(v) < 6:
-            raise ValueError("密码长度不能少于6位")
+        if not re.match(r'^[a-zA-Z0-9!@#$%^&*()_+\-=\[\]{}|;:,.<>?]+$', v):
+            raise ValueError("密码只能包含英文字母、数字和常用特殊字符")
         return v
 
 
@@ -53,27 +45,20 @@ class UserLogIn(BaseModel):
     @author: Luzhichao
     @date: 2026-05-08
     """
-    user_name: str
-    user_password: str
+    user_name: str = Field(..., min_length=2, max_length=20, description="用户名(只能包含英文字母和数字)")
+    user_password: str = Field(..., min_length=6, max_length=20, description="密码(只能包含英文字母、数字和常用特殊字符)")
 
     @field_validator("user_name")
     def validate_username(cls, v):
-        v = v.strip()
-        # 不能为空
-        if not v:
-            raise ValueError("用户名不能为空")
-        # 不能超过10位
-        if len(v) > 10:
-            raise ValueError("用户名长度不能超过10位")
         # 只能是英文字母
-        if not re.match(r'^[a-zA-Z]+$', v):
-            raise ValueError("用户名只能包含英文字母")
+        if not re.match(r'^[a-zA-Z0-9]+$', v):
+            raise ValueError("用户名只能包含英文字母和数字")
         return v
 
     @field_validator("user_password")
     def validate_password(cls, v):
-        if len(v) < 6:
-            raise ValueError("密码长度不能少于6位")
+        if not re.match(r'^[a-zA-Z0-9!@#$%^&*()_+\-=\[\]{}|;:,.<>?]+$', v):
+            raise ValueError("密码只能包含英文字母、数字和常用特殊字符")
         return v
 
 

@@ -4,13 +4,13 @@
 @author: luzhichao
 @date: 2026/5/7
 """
-from utils import time_utils
+from utils.time_utils import now_timestamp
 
 
 def _wait_next_millis(last_timestamp):
-    timestamp = time_utils.now_time()
+    timestamp = now_timestamp()
     while timestamp == last_timestamp:
-        timestamp = time_utils.now_time()
+        timestamp = now_timestamp()
     return timestamp
 
 
@@ -44,7 +44,7 @@ class Snowflake:
         self.last_timestamp = -1
 
     def generate(self) -> int:
-        timestamp = time_utils.now_time()
+        timestamp = now_timestamp()
 
         if timestamp < self.last_timestamp:
             raise Exception("时间回退，无法生成ID")

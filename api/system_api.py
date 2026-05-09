@@ -6,7 +6,7 @@
 """
 import logging
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Body
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.config import settings
@@ -20,9 +20,9 @@ logger = logging.getLogger("system_api")
 router = APIRouter(prefix=f"/api/{settings.api_version}/system", tags=["系统管理接口"])
 
 
-@router.post("/register")
+@router.post(path="/register", summary="用户注册", description="用户注册接口")
 async def register(
-        user: UserRegister,
+        user: UserRegister = Body(..., description="用户注册信息"),
         db: AsyncSession = Depends(get_db)
 ):
     """
@@ -36,9 +36,9 @@ async def register(
     return success_response(data=True, msg="注册成功")
 
 
-@router.post("/login")
+@router.post(path="/login", summary="用户登录", description="用户登录接口")
 async def login(
-        user: UserLogIn,
+        user: UserLogIn = Body(..., description="用户登录信息"),
         db: AsyncSession = Depends(get_db)
 ):
     """
