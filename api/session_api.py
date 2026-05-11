@@ -36,6 +36,22 @@ async def create_session(
     return Result.success(data=session_id, msg="会话创建成功")
 
 
+@router.post(path="/update", summary="用户修改会话标题", description="用户修改会话标题")
+async def update_session(
+        session_id: str = Body(..., description="会话ID"),
+        session_name: str = Body(..., description="会话名称"),
+        user: Token = Depends(verify_token),
+        db: AsyncSession = Depends(get_db),
+):
+    """
+    用户创建新会话
+    @author: Luzhichao
+    @date: 2026-05-10
+    """
+    session_id = await SessionService.update_session(db, user.user_id, session_id, session_name)
+    return Result.success(data=session_id, msg="会话创建成功")
+
+
 @router.post(path="/list_user_sessions", summary="获取用户会话列表", description="获取用户会话列表")
 async def list_user_sessions(
         db: AsyncSession = Depends(get_db),

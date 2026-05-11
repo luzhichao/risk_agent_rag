@@ -47,6 +47,38 @@ class SessionService:
             raise CustomException(detail="创建会话失败")
 
     @staticmethod
+    async def update_session(db: AsyncSession, user_id: str, session_id: str,
+                             session_name: str) -> str:
+        """
+        修改会话标题
+        :param db 数据库连接
+        :param user_id: 用户ID
+        :param session_id 会话ID
+        :param session_name: 新会话名称
+        :return:
+        @author: Luzhichao
+        @date: 2026-05-10
+        """
+
+        try:
+            execute = await db.execute(
+                select(SessionEntity)
+                .filter(SessionEntity.user_id == user_id)
+                .filter(SessionEntity.id == session_id)
+            )
+            session: SessionEntity = execute.scalar_one_or_none()
+            if session is None:
+                raise CustomException(detail="会话不存在")
+
+            session.session_name = session_name
+            await db.commit()
+            await db.refresh(session)
+        except Exception as e:
+            logger.error(e)
+            await db.rollback()
+            raise CustomException(detail="会话更新失败")
+
+    @staticmethod
     async def get_user_sessions(db: AsyncSession, user_id: str, session_id: str):
         """
         获取用户会话
@@ -69,7 +101,6 @@ class SessionService:
                                        user_id=session.user_id)
             else:
                 return None
-
         except Exception as e:
             logger.error(e)
             raise CustomException(detail="获取会话失败")
