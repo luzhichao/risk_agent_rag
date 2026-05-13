@@ -23,7 +23,7 @@ router = APIRouter(prefix=f"/api/{settings.api_version}/session", tags=["会话�
 
 @router.post(path="/create", summary="用户创建新会话", description="用户创建新会话")
 async def create_session(
-        session_name: str = Body("未命名会话", description="会话名称"),
+        session_name: str = Body("未命名会话", min_length=2, max_length=20, description="会话名称"),
         user: Token = Depends(verify_token),
         db: AsyncSession = Depends(get_db),
 ):
@@ -39,7 +39,7 @@ async def create_session(
 @router.post(path="/update", summary="用户修改会话标题", description="用户修改会话标题")
 async def update_session(
         session_id: str = Body(..., description="会话ID"),
-        session_name: str = Body(..., description="会话名称"),
+        session_name: str = Body(..., min_length=2, max_length=20, description="会话名称"),
         user: Token = Depends(verify_token),
         db: AsyncSession = Depends(get_db),
 ):
@@ -82,7 +82,7 @@ async def session_history(
     return Result.success(data=result, msg="查询成功")
 
 
-@router.delete(path="/clear_session_history", summary="会话历史清空", description="会话历史清空")
+@router.post(path="/clear_session_history", summary="会话历史清空", description="会话历史清空")
 async def clear_session_history(
         session_id: str = Body(..., description="会话ID"),
         db: AsyncSession = Depends(get_db),

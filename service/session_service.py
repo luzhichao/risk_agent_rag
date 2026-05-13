@@ -59,7 +59,6 @@ class SessionService:
         @author: Luzhichao
         @date: 2026-05-10
         """
-
         try:
             execute = await db.execute(
                 select(SessionEntity)

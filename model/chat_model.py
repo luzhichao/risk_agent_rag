@@ -10,6 +10,8 @@ from pydantic import BaseModel, Field
 class ChatResponse(BaseModel):
     """
     智能回复数据模型
+    @author: Luzhichao
+    @date: 2026-05-12
     """
     name: str = Field(description="隐患名称")
     source: str = Field(description="隐患来源")

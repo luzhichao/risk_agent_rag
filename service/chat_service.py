@@ -14,6 +14,11 @@ from utils.llm_utils import chat
 
 
 class ChatService:
+    """
+    问答服务
+    @author: Luzhichao
+    @date: 2026-05-12
+    """
 
     @staticmethod
     async def ask_chat(session_id: str, question: str,
@@ -30,9 +35,7 @@ class ChatService:
         """
         # 根据用户ID和会话ID判断是否存在会话
         if session_id is None:
-            # 创建用户的新会话
-            session_id = await SessionService.create_new_session(db=db, user_id=user_id,
-                                                                 session_name=question)
+            raise CustomException(detail="会话不存在")
         else:
             # 获取用户会话信息
             session = await SessionService.get_user_sessions(db=db, user_id=user_id,

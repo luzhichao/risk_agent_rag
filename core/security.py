@@ -9,15 +9,10 @@ from datetime import timedelta
 from fastapi import status, Header
 from jose import JWTError, jwt
 
+from core.config import settings
 from core.exceptions import CustomException
 from schema.user_schema import Token
 from utils import time_utils
-
-# token配置
-SECRET_KEY = "i&a~=QSk2Hs_nGM!.9e3RVOWf),:6Yv5#hP}x{ow<rTl@q>puyUd]^EDA/+*|8"
-ALGORITHM = "HS256"
-# 7天
-ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7
 
 
 def create_access_token(user_id: int, user_name: str) -> str:
@@ -28,13 +23,13 @@ def create_access_token(user_id: int, user_name: str) -> str:
     @author: Luzhichao
     @date: 2026-05-08
     """
-    expire = time_utils.add_time(timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
+    expire = time_utils.add_time(timedelta(minutes=settings.access_token_expire_minutes))
     to_encode = {
         "user_id": user_id,
         "user_name": user_name,
         "exp": expire
     }
-    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    encoded_jwt = jwt.encode(to_encode, settings.secret_key, algorithm=settings.algorithm)
     return encoded_jwt
 
 
@@ -50,7 +45,7 @@ def verify_token(token: str = Header(default=None, alias="Authorization")):
         raise CustomException(status_code=status.HTTP_401_UNAUTHORIZED,
                               detail="登录失效，请重新登录")
     try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM],
+        payload = jwt.decode(token, settings.secret_key, algorithms=[settings.algorithm],
                              options={"verify_exp": True})
         user_id: int = payload.get("user_id")
         user_name: str = payload.get("user_name")

@@ -24,6 +24,11 @@ AsyncSessionLocal: AsyncSession = async_sessionmaker(
 
 
 async def get_db():
+    """
+    获取数据库session对象
+    @author: Luzhichao
+    @date: 2026-05-12
+    """
     async with AsyncSessionLocal() as session:
         try:
             yield session

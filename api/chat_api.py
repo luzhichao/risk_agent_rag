@@ -51,7 +51,7 @@ async def ask_question(
         )
         return StreamingResponse(
             content=answer,
-            media_type="application/json; charset=utf-8"
+            media_type="application/jsonlines; charset=utf-8"
         )
     except Exception as e:
         logger.error(f"用户提问异常：{str(e)}")

@@ -4676,6 +4676,7 @@ dependencies = [
     { name = "python-jose", extra = ["cryptography"] },
     { name = "python-multipart" },
     { name = "sqlalchemy", extra = ["asyncio"] },
+    { name = "starlette" },
     { name = "unstructured", extra = ["all-docs"] },
     { name = "uvicorn" },
 ]
@@ -4712,6 +4713,7 @@ requires-dist = [
     { name = "python-jose", extras = ["cryptography"], specifier = ">=3.5.0" },
     { name = "python-multipart", specifier = ">=0.0.27" },
     { name = "sqlalchemy", extras = ["asyncio"], specifier = ">=2.0.49" },
+    { name = "starlette", specifier = ">=1.0.0" },
     { name = "unstructured", extras = ["all-docs"], specifier = ">=0.22.27" },
     { name = "uvicorn", specifier = ">=0.46.0" },
 ]

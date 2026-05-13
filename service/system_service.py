@@ -32,6 +32,12 @@ async def _check_user(db: AsyncSession, record):
 
 
 class UserService:
+    """
+    用户服务
+    @author: Luzhichao
+    @date: 2026-05-12
+    """
+
     @staticmethod
     async def register(db: AsyncSession, user: UserRegister):
         # 检查用户名是否存在

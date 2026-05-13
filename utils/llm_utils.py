@@ -64,25 +64,37 @@ chromadb = Chroma(
     collection_name=settings.chroma_collection_name
 )
 
-redis_client = Redis(
-    host=settings.redis_host,
-    port=settings.redis_port,
-    password=settings.redis_password,
-    decode_responses=False
-)
-
-# Pass the configured client to RedisSaver
-redis_checkpointer = RedisSaver(redis_client=redis_client)
-middleware = SummarizationMiddleware(model=text_llm, trigger=("tokens", 100), keep=("messages", 5))
+middleware = SummarizationMiddleware(model=text_llm, trigger=("tokens", 4000),
+                                     keep=("messages", 100))
 
 with open(settings.system_prompt_file_path, "r", encoding="utf-8") as f:
     system_prompt = f.read()
+
+
+def get_redis_checkpointer() -> RedisSaver:
+    """
+    获取RedisSaver实例
+    @author: Luzhichao
+    @date: 2026-05-12
+    """
+    redis_client = Redis(
+        host=settings.redis_host,
+        port=settings.redis_port,
+        password=settings.redis_password,
+        db=settings.redis_db,
+        decode_responses=False
+    )
+
+    # Pass the configured client to RedisSaver
+    redis_checkpointer = RedisSaver(redis_client=redis_client)
+    return redis_checkpointer
+
 
 agent = create_agent(model=multi_llm,
                      system_prompt=system_prompt,
                      tools=[search_knowledge, web_search],
                      middleware=[middleware],
-                     checkpointer=redis_checkpointer,
+                     checkpointer=get_redis_checkpointer(),
                      response_format=ChatResponse,
                      )
 
@@ -108,7 +120,8 @@ async def chat(
         stream = agent.stream(input={"messages": [HumanMessage(content=messages)]}, config=config,
                               stream_mode="messages")
         for chunk, metadata in stream:
-            # print("-" * 50, type(chunk))
+            # print("-" * 50)
+            # print(chunk)
             # print(metadata)
             source = metadata.get("langgraph_node", "")
             if isinstance(chunk, AIMessageChunk) and chunk.content:
@@ -117,11 +130,11 @@ async def chat(
                 else:
                     data = {"type": "think", "content": chunk.content}
                 # print("=" * 50)
-                # print(data, end="", flush=True)
-                yield json.dumps(data, ensure_ascii=False)
+                # print(data, end="\n", flush=True)
+                yield json.dumps(data, ensure_ascii=False) + "\n"
     except Exception as e:
         logger.error(f"会话接口异常：{str(e)}")
-        error_content = {"type": "output", "content": f"会话接口异常：{str(e)}"}
+        error_content = {"type": "output", "content": f"服务繁忙，请稍后再试：{str(e)}"}
         yield json.dumps(error_content, ensure_ascii=False)
 
 
@@ -133,7 +146,7 @@ def get_history(session_id: str):
     """
     # 配置会话ID
     config: RunnableConfig = {"configurable": {"thread_id": session_id}}
-    history = redis_checkpointer.get(config=config)
+    history = get_redis_checkpointer().get(config=config)
     session_history: list[SessionHistoryResponse] = []
     if history is not None:
         channel_values = history.get("channel_values", None)
@@ -158,7 +171,7 @@ def clean_history(session_id: str):
     @author: Luzhichao
     @date: 2026-05-07
     """
-    redis_checkpointer.delete_thread(thread_id=session_id)
+    get_redis_checkpointer().delete_thread(thread_id=session_id)
 
 
 def save_knowledge(docs: list[Document]):

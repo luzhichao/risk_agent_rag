@@ -26,14 +26,33 @@ class CustomException(Exception):
         self.detail = detail
 
 
-# 全局异常处理器
 def register_global_exception(app: FastAPI):
-    # 捕获业务主动抛的 CustomException
+    """
+    全局异常处理器
+    :param
+    :return
+    @author: Luzhichao
+    @date: 2026-05-12
+    """
+
     @app.exception_handler(CustomException)
     async def api_exception_handler(request: Request, exc: CustomException):
+        """
+        捕获业务主动抛的 CustomException
+        :param
+        :return
+        @author: Luzhichao
+        @date: 2026-05-12
+        """
         return JSONResponse(content=Result.error(code=exc.status_code, msg=exc.detail).model_dump())
 
-    # 捕获所有未知异常（服务器500错误）
     @app.exception_handler(Exception)
     async def global_exception_handler(request: Request, exc: Exception):
+        """
+        捕获所有未知异常（服务器500错误）
+        :param
+        :return
+        @author: Luzhichao
+        @date: 2026-05-12
+        """
         return JSONResponse(content=Result.error(msg=f"服务器异常：{str(exc)}").model_dump())

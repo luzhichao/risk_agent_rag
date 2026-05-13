@@ -17,9 +17,9 @@ load_dotenv()
 class Settings(BaseSettings):
     # 服务配置
     api_version: str = Field(default=os.getenv("API_VERSION", "v1"))
-    secret_key: str = Field(default=os.getenv("SECRET_KEY"))
+    secret_key: str = Field(default=os.getenv("SECRET_KEY", "i&a~=QSk2Hs_nGM!.9e3RVOWf),:6Yv5#hP}x{ow<rTl@q>puyUd]^EDA/+*|8"))
     algorithm: str = Field(default=os.getenv("ALGORITHM", "HS256"))
-    access_token_expire_minutes: int = Field(default=os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 30))
+    access_token_expire_minutes: int = Field(default=os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 60 * 24 * 7))
 
     # 系统提示词路径
     system_prompt_file_path: str = Field(
@@ -47,11 +47,6 @@ class Settings(BaseSettings):
     chunk_size: int = 500
     chunk_overlap: int = 50
 
-    # OCR配置
-    # baidu_ocr_app_id: str = Field(default=os.getenv("BAIDU_OCR_APP_ID"))
-    # baidu_ocr_api_key: str = Field(default=os.getenv("BAIDU_OCR_API_KEY"))
-    # baidu_ocr_secret_key: str = Field(default=os.getenv("BAIDU_OCR_SECRET_KEY"))
-
     # 数据库配置
     mysql_driver: str = Field(default="mysql+aiomysql")
     mysql_db_user: str = Field(default=os.getenv("MYSQL_DB_USER", "root"))
@@ -64,6 +59,7 @@ class Settings(BaseSettings):
     redis_host: str = Field(default=os.getenv("REDIS_HOST", "127.0.0.1"))
     redis_port: int = Field(default=os.getenv("REDIS_PORT", 6379))
     redis_password: str = Field(default=os.getenv("REDIS_PASSWORD", ""))
+    redis_db: int = Field(default=os.getenv("REDIS_DB", 0))
 
     @property
     def mysql_database_url(self) -> str:

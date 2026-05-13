@@ -16,6 +16,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from httpcore import Request
 
 from api.chat_api import router as chat_router
+from api.file_api import router as file_router
+from api.knowledge_api import router as knowledge_router
 from api.session_api import router as session_router
 from api.system_api import router as sys_router
 from core.config import settings
@@ -71,6 +73,8 @@ def create_app() -> FastAPI:
     app.include_router(chat_router)
     app.include_router(sys_router)
     app.include_router(session_router)
+    app.include_router(file_router)
+    app.include_router(knowledge_router)
 
     # 注册全局异常
     register_global_exception(app)
@@ -91,6 +95,10 @@ def create_app() -> FastAPI:
     @app.middleware("http")
     async def log_request(request: Request, call_next):
         """请求日志中间件"""
+        # if "X-Forwarded-Proto" in request.headers:
+        #     request.scope["scheme"] = request.headers["X-Forwarded-Proto"]
+        # else:
+        #     request.scope["scheme"] = "https"
         start_time = datetime.now()
         response = await call_next(request)
         end_time = datetime.now()
@@ -118,5 +126,6 @@ if __name__ == "__main__":
         host=os.getenv("SERVER_HOST", "127.0.0.1"),
         port=int(os.getenv("SERVER_PORT", 8000)),
         reload=True,  # 开发环境开启，生产环境关闭
-        factory=True
+        factory=True,
+        root_path="/"
     )

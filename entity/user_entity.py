@@ -12,7 +12,7 @@ from entity.base_entity import BaseEntity
 
 class UserEntity(BaseEntity):
     """
-    用户表
+    用户数据实体
     @author: Luzhichao
     @date: 2026-05-08
     """

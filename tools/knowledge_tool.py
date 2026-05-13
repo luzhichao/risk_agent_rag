@@ -40,5 +40,6 @@ def web_search(keyword: str) -> list[str]:
     @author: Luzhichao
     @date: 2026-05-07
     """
+    print("=============web_search=============\n", keyword)
     search = TavilySearch(max_results=5, topic="general")
     return search.invoke(keyword)

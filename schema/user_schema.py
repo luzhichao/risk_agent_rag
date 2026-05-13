@@ -68,5 +68,5 @@ class Token(BaseModel):
     @author: Luzhichao
     @date: 2026-05-08
     """
-    user_id: int = None
+    user_id: str = None
     user_name: str = None
